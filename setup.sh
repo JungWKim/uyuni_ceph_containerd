@@ -163,6 +163,7 @@ git clone https://github.com/xiilab/Uyuni_Deploy.git
 cd ~/Uyuni_Deploy/environments
 rm -rf test
 cp -r default test
+sed -i "s/Keycloak12345/xiilabPassword3#" test/values.yaml
 sed -i "s/default.com/${IP}/gi" test/values.yaml
 sed -i "s/192.168.1.210/${IP}/gi" test/values.yaml
 sed -i "s/192.168.56.20-192.168.56.50/${LB_IP_POOL}/gi" test/values.yaml
@@ -184,17 +185,15 @@ sudo snap install kustomize
 # download uyuni-kustomize repository and configure it
 git clone https://github.com/xiilab/Uyuni_Kustomize.git
 cd ~/Uyuni_Kustomize/overlays
-cp -r develop test
+cp -r stage test
 cp ~/.kube/config test/config
 sed -i "s/127.0.0.1/${IP}/g" test/config
 
-sed -i "s/dev.uyuni-suite.xiilab.com//gi" test/ingress-patch.yaml
-sed -i "s/192.168.2.150/${IP}/gi" test/core-deployment-env.yaml
-sed -i "s/dev.uyuni-suite.xiilab.com/${IP}/gi" test/core-deployment-env.yaml
-sed -i "s/192.168.2.141/${IP}/gi" test/core-deployment-env.yaml
-sed -i "s/default.com/${IP}/gi" test/frontend-deployment-env.yaml
-sed -i "s/uyuni-suite.xiilab.com//gi" ~/Uyuni_Kustomize/base/services/ingress.yaml
-
+sed -i "s/uyuni-suite.xiilab.com/${IP}/g" test/ingress-patch.yaml
+sed -i "s/192.168.1.235/${IP}/g" test/core-deployment-env.yaml
+sed -i "s/uyuni-suite.xiilab.com/${IP}/g" test/core-deployment-env.yaml
+sed -i "s/uyuni-suite.xiilab.com/${IP}/g" test/frontend-deployment-env.yaml
+sed -i "s/uyuni-suite.xiilab.com//g" ~/Uyuni_Kustomize/base/services/ingress.yaml
 sed -i "s/- uyuni-suite-pv.yaml/#- uyuni-suite-pv.yaml/g" test/volumes/kustomization.yaml
 sed -i "s/uyuni-suite/ceph-filesystem/g" test/volumes/uyuni-suite-pvc.yaml
 sed -i "s/100/${PV_SIZE}/g" test/volumes/uyuni-suite-pvc.yaml
