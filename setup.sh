@@ -163,10 +163,10 @@ git clone https://github.com/xiilab/Uyuni_Deploy.git
 cd ~/Uyuni_Deploy/environments
 rm -rf test
 cp -r default test
-sed -i "s/Keycloak12345/xiilabPassword3#" test/values.yaml
-sed -i "s/default.com/${IP}/gi" test/values.yaml
-sed -i "s/192.168.1.210/${IP}/gi" test/values.yaml
-sed -i "s/192.168.56.20-192.168.56.50/${LB_IP_POOL}/gi" test/values.yaml
+sed -i "s/Keycloak12345/xiilabPassword3#/g" test/values.yaml
+sed -i "s/default.com/${IP}/g" test/values.yaml
+sed -i "s/192.168.1.210/${IP}/g" test/values.yaml
+sed -i "s/192.168.56.20-192.168.56.50/${LB_IP_POOL}/g" test/values.yaml
 cd ~/Uyuni_Deploy
 sed -i "34,37d" helmfile.yaml
 sed -i "16,18d" helmfile.yaml
