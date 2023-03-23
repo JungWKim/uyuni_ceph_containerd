@@ -193,7 +193,7 @@ sed -i "s/uyuni-suite.xiilab.com/${IP}/g" test/ingress-patch.yaml
 sed -i "s/192.168.1.235/${IP}/g" test/core-deployment-env.yaml
 sed -i "s/uyuni-suite.xiilab.com/${IP}/g" test/core-deployment-env.yaml
 sed -i "s/uyuni-suite.xiilab.com/${IP}/g" test/frontend-deployment-env.yaml
-sed -i "s/uyuni-suite.xiilab.com//g" ~/Uyuni_Kustomize/base/services/ingress.yaml
+sed -i "s/uyuni-suite.xiilab.com/${IP}/g" ~/Uyuni_Kustomize/base/services/ingress.yaml
 sed -i "s/- uyuni-suite-pv.yaml/#- uyuni-suite-pv.yaml/g" test/volumes/kustomization.yaml
 sed -i "s/uyuni-suite/ceph-filesystem/g" test/volumes/uyuni-suite-pvc.yaml
 sed -i "s/100/${PV_SIZE}/g" test/volumes/uyuni-suite-pvc.yaml
