@@ -2,15 +2,38 @@
 
 IP=
 LB_IP_POOL=
+PV_SIZE=
 
 cd ~
+
+# prevent auto upgrade
+sudo sed -i 's/1/0/g' /etc/apt/apt.conf.d/20auto-upgrades
+
+# install nvidia driver
+sudo apt install -y build-essential
+sudo apt install -y linux-headers-generic
+sudo apt install -y dkms
+
+cat << EOF | sudo tee -a /etc/modprobe.d/blacklist.conf 
+blacklist nouveau
+blacklist lbm-nouveau
+options nouveau modeset=0
+alias nouveau off
+alias lbm-nouveau off
+EOF
+
+echo options nouveau modeset=0 | sudo tee -a /etc/modprobe.d/nouveau-kms.conf
+sudo update-initramfs -u
+
+sudo rmmod nouveau
+
+wget https://kr.download.nvidia.com/XFree86/Linux-x86_64/525.85.05/NVIDIA-Linux-x86_64-525.85.05.run
+
+sudo sh ~/NVIDIA-Linux-x86_64-525.85.05.run
 
 # disable firewall
 sudo systemctl stop ufw
 sudo systemctl disable ufw
-
-# prevent auto upgrade
-sudo sed -i 's/1/0/g' /etc/apt/apt.conf.d/20auto-upgrades
 
 # install basic packages
 sudo apt install -y net-tools nfs-common whois
@@ -19,12 +42,12 @@ sudo apt install -y net-tools nfs-common whois
 sudo modprobe overlay \
     && sudo modprobe br_netfilter
 
-cat <<EOF | sudo tee /etc/modules-load.d/containerd.conf
+cat <<EOF | sudo tee -a /etc/modules-load.d/containerd.conf
 overlay
 br_netfilter
 EOF
 
-cat <<EOF | sudo tee /etc/sysctl.d/99-kubernetes-cri.conf
+cat <<EOF | sudo tee -a /etc/sysctl.d/99-kubernetes-cri.conf
 net.bridge.bridge-nf-call-iptables  = 1
 net.ipv4.ip_forward                 = 1
 net.bridge.bridge-nf-call-ip6tables = 1
@@ -155,5 +178,28 @@ kubectl patch storageclass ceph-block -p '{"metadata": {"annotations":{"storagec
 kubectl patch storageclass ceph-bucket -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
 kubectl patch storageclass ceph-filesystem -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 
-# deploy uyuni suite
+# install kustomize
+sudo snap install kustomize
+
+# download uyuni-kustomize repository and configure it
 git clone https://github.com/xiilab/Uyuni_Kustomize.git
+cd ~/Uyuni_Kustomize/overlays
+cp -r develop test
+cp ~/.kube/config test/config
+sed -i "s/127.0.0.1/${IP}/g" test/config
+
+sed -i "s/dev.uyuni-suite.xiilab.com//gi" test/ingress-patch.yaml
+sed -i "s/192.168.2.150/${IP}/gi" test/core-deployment-env.yaml
+sed -i "s/dev.uyuni-suite.xiilab.com/${IP}/gi" test/core-deployment-env.yaml
+sed -i "s/192.168.2.141/${IP}/gi" test/core-deployment-env.yaml
+sed -i "s/default.com/${IP}/gi" test/frontend-deployment-env.yaml
+sed -i "s/uyuni-suite.xiilab.com//gi" ~/Uyuni_Kustomize/base/services/ingress.yaml
+
+sed -i "s/- uyuni-suite-pv.yaml/#- uyuni-suite-pv.yaml/g" test/volumes/kustomization.yaml
+sed -i "s/uyuni-suite/ceph-filesystem/g" test/volumes/uyuni-suite-pvc.yaml
+sed -i "s/100/${PV_SIZE}/g" test/volumes/uyuni-suite-pvc.yaml
+
+# deploy uyuni suite
+cd ..
+kubectl create ns uyuni-suite
+kustomize build overlays/test | kubectl apply -f -
