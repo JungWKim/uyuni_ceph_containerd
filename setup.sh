@@ -1,6 +1,7 @@
 #!/bin/bash
 
 IP=
+LB_IP_POOL=
 
 cd ~
 
@@ -100,7 +101,7 @@ chmod 700 get_helm.sh
 ./get_helm.sh
 
 # install rook ceph
-git clone https://github.com/rook/rook.git
+git clone https://github.com/rook/rook.git -b v.1.11.1
 helm repo add rook-release https://charts.rook.io/release
 helm search repo rook-ceph
 kubectl create namespace rook-ceph
@@ -114,11 +115,9 @@ sed -i "s/count: 3/count: 1/g" ~/rook/deploy/charts/rook-ceph-cluster/values.yam
 # reduce manager daemon from 3 to 1
 sed -i "s/count: 2/count: 1/g" ~/rook/deploy/charts/rook-ceph-cluster/values.yaml
 # reduce cephBlock datapoolsize from 3 to 2
-sed -i "429s/3/2/g" ~/rook/deploy/charts/rook-ceph-cluster/values.yaml
 # reduce cephFilesystem metadata pool size from 3 to 2
-sed -i "492s/3/2/g" ~/rook/deploy/charts/rook-ceph-cluster/values.yaml
 # reduce cephFilesystem data pool size from 3 to 2
-sed -i "496s/3/2/g" ~/rook/deploy/charts/rook-ceph-cluster/values.yaml
+sed -i "s/size: 3/size: 2/g" ~/rook/deploy/charts/rook-ceph-cluster/values.yaml
 
 #--- install rook ceph cluster
 cd ~/rook/deploy/charts/rook-ceph-cluster
@@ -132,17 +131,22 @@ tar -zxvf helmfile_0.150.0_linux_amd64.tar.gz
 sudo mv helmfile /usr/bin/
 rm LICENSE && rm README.md && rm helmfile_0.150.0_linux_amd64.tar.gz
 
-# install uyuni infra
+# deploy uyuni infra
 git clone https://github.com/xiilab/Uyuni_Deploy.git
+cd ~/Uyuni_Deploy/environments
+cp -r default itmaya
+sed -i "s/default.com/${IP}/gi" itmaya/values.yaml
+sed -i "s/192.168.1.210/${IP}/gi" itmaya/values.yaml
+sed -i "s/192.168.56.20-192.168.56.50/${LB_IP_POOL}/gi" itmaya/values.yaml
 cd ~/Uyuni_Deploy
-helmfile --environment test -l type=base sync
+helmfile --environment itmaya -l type=base sync
 cd ~
 
 # set ceph-filesystem as default storageclass
-kubectl patch storageclass nfs-client -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
-kubectl patch storageclass ceph-block -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
-kubectl patch storageclass ceph-bucket -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
-kubectl patch storageclass ceph-filesystem -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+#kubectl patch storageclass nfs-client -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+#kubectl patch storageclass ceph-block -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+#kubectl patch storageclass ceph-bucket -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+#kubectl patch storageclass ceph-filesystem -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 
-# install uyuni suite
+# deploy uyuni suite
 git clone https://github.com/xiilab/Uyuni_Kustomize.git
