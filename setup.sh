@@ -84,6 +84,9 @@ sudo chown ${USER}:${USER} ${HOME}/.kube/config
 echo "source <(kubectl completion bash)" >> ${HOME}/.bashrc
 echo "source <(kubeadm completion bash)" >> ${HOME}/.bashrc
 
+echo "source <(kubectl completion bash)" | sudo tee -a /root/.bashrc
+echo "source <(kubeadm completion bash)" | sudo tee -a /root/.bashrc
+
 # install nvidia-container-toolkit
 distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
     && curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | sudo apt-key add - \
@@ -92,7 +95,7 @@ distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
 sudo apt-get update \
     && sudo apt-get install -y nvidia-container-toolkit
 
-mv ~/xiilab/config.toml /etc/containerd/
+sudo mv ~/xiilab/config.toml /etc/containerd/
 sudo systemctl restart containerd
 
 # install helm
@@ -101,7 +104,7 @@ chmod 700 get_helm.sh
 ./get_helm.sh
 
 # install rook ceph
-git clone https://github.com/rook/rook.git -b v.1.11.1
+git clone https://github.com/rook/rook.git 
 helm repo add rook-release https://charts.rook.io/release
 helm search repo rook-ceph
 kubectl create namespace rook-ceph
