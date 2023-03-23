@@ -72,6 +72,7 @@ cp -rfp inventory/sample inventory/mycluster
 declare -a IPS=(${IP})
 CONFIG_FILE=inventory/mycluster/hosts.yaml python3 contrib/inventory_builder/inventory.py ${IPS[@]}
 
+# automatically disable swap partition
 ansible-playbook -i inventory/mycluster/hosts.yaml  --become --become-user=root cluster.yml -K
 cd ~
 
@@ -137,19 +138,22 @@ rm LICENSE && rm README.md && rm helmfile_0.150.0_linux_amd64.tar.gz
 # deploy uyuni infra
 git clone https://github.com/xiilab/Uyuni_Deploy.git
 cd ~/Uyuni_Deploy/environments
-cp -r default itmaya
-sed -i "s/default.com/${IP}/gi" itmaya/values.yaml
-sed -i "s/192.168.1.210/${IP}/gi" itmaya/values.yaml
-sed -i "s/192.168.56.20-192.168.56.50/${LB_IP_POOL}/gi" itmaya/values.yaml
+rm -rf test
+cp -r default test
+sed -i "s/default.com/${IP}/gi" test/values.yaml
+sed -i "s/192.168.1.210/${IP}/gi" test/values.yaml
+sed -i "s/192.168.56.20-192.168.56.50/${LB_IP_POOL}/gi" test/values.yaml
 cd ~/Uyuni_Deploy
-helmfile --environment itmaya -l type=base sync
+sed -i "34,37d" helmfile.yaml
+sed -i "16,18d" helmfile.yaml
+sed -i "2,12d" helmfile.yaml
+helmfile --environment test -l type=base sync
 cd ~
 
 # set ceph-filesystem as default storageclass
-#kubectl patch storageclass nfs-client -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
-#kubectl patch storageclass ceph-block -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
-#kubectl patch storageclass ceph-bucket -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
-#kubectl patch storageclass ceph-filesystem -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+kubectl patch storageclass ceph-block -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+kubectl patch storageclass ceph-bucket -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+kubectl patch storageclass ceph-filesystem -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 
 # deploy uyuni suite
 git clone https://github.com/xiilab/Uyuni_Kustomize.git
