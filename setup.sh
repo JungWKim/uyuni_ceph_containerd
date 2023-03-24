@@ -161,7 +161,7 @@ sed -i "s/size: 3/size: 2/g" ~/rook/deploy/charts/rook-ceph-cluster/values.yaml
 cd ~/rook/deploy/charts/rook-ceph-cluster
 helm install -n rook-ceph rook-ceph-cluster --set operatorNamespace=rook-ceph rook-release/rook-ceph-cluster -f values.yaml
 cd ~
-sleep 60
+sleep 180
 
 # install helmfile
 wget https://github.com/helmfile/helmfile/releases/download/v0.150.0/helmfile_0.150.0_linux_amd64.tar.gz
