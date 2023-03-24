@@ -166,6 +166,11 @@ tar -zxvf helmfile_0.150.0_linux_amd64.tar.gz
 sudo mv helmfile /usr/bin/
 rm LICENSE && rm README.md && rm helmfile_0.150.0_linux_amd64.tar.gz
 
+# set ceph-filesystem as default storageclass
+kubectl patch storageclass ceph-block -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+kubectl patch storageclass ceph-bucket -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+kubectl patch storageclass ceph-filesystem -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+
 # deploy uyuni infra
 git clone https://github.com/xiilab/Uyuni_Deploy.git
 cd ~/Uyuni_Deploy/environments
@@ -181,11 +186,6 @@ sed -i "16,18d" helmfile.yaml
 sed -i "2,12d" helmfile.yaml
 helmfile --environment test -l type=base sync
 cd ~
-
-# set ceph-filesystem as default storageclass
-kubectl patch storageclass ceph-block -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
-kubectl patch storageclass ceph-bucket -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
-kubectl patch storageclass ceph-filesystem -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 
 # install kustomize
 sudo snap install kustomize
