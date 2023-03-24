@@ -34,7 +34,8 @@ sudo update-initramfs -u
 
 sudo rmmod nouveau
 
-wget https://kr.download.nvidia.com/XFree86/Linux-x86_64/525.85.05/NVIDIA-Linux-x86_64-525.85.05.run
+#wget https://kr.download.nvidia.com/XFree86/Linux-x86_64/525.85.05/NVIDIA-Linux-x86_64-525.85.05.run
+scp root@192.168.1.59:/root/files/https://kr.download.nvidia.com/XFree86/Linux-x86_64/515.57/NVIDIA-Linux-x86_64-515.57.run .
 
 sudo sh ~/NVIDIA-Linux-x86_64-525.85.05.run
 
