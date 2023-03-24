@@ -16,6 +16,7 @@ cd ~
 sudo sed -i 's/1/0/g' /etc/apt/apt.conf.d/20auto-upgrades
 
 # install nvidia driver
+sudo apt update
 sudo apt install -y build-essential
 sudo apt install -y linux-headers-generic
 sudo apt install -y dkms
