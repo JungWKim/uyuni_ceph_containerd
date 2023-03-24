@@ -150,7 +150,7 @@ helm repo add rook-release https://charts.rook.io/release
 helm search repo rook-ceph
 kubectl create namespace rook-ceph
 helm install --namespace rook-ceph rook-ceph rook-release/rook-ceph
-sleep 60
+sleep 30
 
 # enable toolbox
 sed -i "26s/false/true/g" ~/rook/deploy/charts/rook-ceph-cluster/values.yaml
