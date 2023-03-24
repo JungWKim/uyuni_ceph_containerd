@@ -39,6 +39,9 @@ scp root@192.168.1.59:/root/files/NVIDIA-Linux-x86_64-515.57.run .
 
 sudo sh ~/NVIDIA-Linux-x86_64-515.57.run
 
+nvidia-smi
+nvidia-smi -L
+
 # disable firewall
 sudo systemctl stop ufw
 sudo systemctl disable ufw
