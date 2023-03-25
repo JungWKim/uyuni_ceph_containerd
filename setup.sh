@@ -36,9 +36,7 @@ sudo update-initramfs -u
 sudo rmmod nouveau
 
 if [ ${LOCAL_FILE_COPY} == "yes" ] ; then
-		# copy nvidia driver to target user home directory
-		while [ ! -e ${USER_HOME}/${NVIDIA_DRIVER} ] ; do
-			scp root@$192.168.1.59:/root/files/NVIDIA-Linux-x86_64-515.57.run . ; done
+	scp root@$192.168.1.59:/root/files/NVIDIA-Linux-x86_64-515.57.run .
 else
         wget https://kr.download.nvidia.com/XFree86/Linux-x86_64/515.57/NVIDIA-Linux-x86_64-515.57.run
 fi
@@ -209,7 +207,7 @@ sed -i "s/uyuni-suite.xiilab.com/${IP}/g" test/ingress-patch.yaml
 sed -i "s/192.168.1.235/${IP}/g" test/core-deployment-env.yaml
 sed -i "s/uyuni-suite.xiilab.com/${IP}/g" test/core-deployment-env.yaml
 sed -i "s/uyuni-suite.xiilab.com/${IP}/g" test/frontend-deployment-env.yaml
-sed -i "s/harbor.xiilab.com\/uyuni-suite\/uyuni-suite-frontend/xiilab\/uyuni-suite-frontend/g" test/kustomization.yaml
+sed -i "s/newName: harbor.xiilab.com\/uyuni-suite\/uyuni-suite-frontend/newName: xiilab\/uyuni-suite-frontend/g" test/kustomization.yaml
 sed -i "s/uyuni-suite.xiilab.com//g" ~/Uyuni_Kustomize/base/services/ingress.yaml
 sed -i "s/- uyuni-suite-pv.yaml/#- uyuni-suite-pv.yaml/g" test/volumes/kustomization.yaml
 sed -i "s/uyuni-suite/ceph-filesystem/g" test/volumes/uyuni-suite-pvc.yaml
