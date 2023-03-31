@@ -8,13 +8,19 @@
 
 LOCAL_FILE_COPY=no
 IP=
-LB_IP_POOL=
 PV_SIZE=
 
 cd ~
 
 # prevent auto upgrade
 sudo sed -i 's/1/0/g' /etc/apt/apt.conf.d/20auto-upgrades
+
+if [ -e /etc/needrestart/needrestart.conf ] ; then
+	# disable outdated librareis pop up
+	sudo sed -i "s/\#\$nrconf{restart} = 'i'/\$nrconf{restart} = 'a'/g" /etc/needrestart/needrestart.conf
+	# disable kernel upgrade hint pop up
+	sudo sed -i "s/\#\$nrconf{kernelhints} = -1/\$nrconf{kernelhints} = 0/g" /etc/needrestart/needrestart.conf 
+fi
 
 # install nvidia driver
 sudo apt update
@@ -52,6 +58,17 @@ sudo systemctl disable ufw
 
 # install basic packages
 sudo apt install -y net-tools nfs-common whois
+
+# install nvidia-container-toolkit
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
+    && curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | sudo apt-key add - \
+    && curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
+sudo apt-get update \
+    && sudo apt-get install -y nvidia-container-toolkit
+    
+# only up to this line for additional worker nodes
+#----------------------------------------------------------------
 
 # network configuration
 sudo modprobe overlay \
@@ -126,14 +143,6 @@ echo "source <(kubeadm completion bash)" >> ${HOME}/.bashrc
 echo "source <(kubectl completion bash)" | sudo tee -a /root/.bashrc
 echo "source <(kubeadm completion bash)" | sudo tee -a /root/.bashrc
 
-# install nvidia-container-toolkit
-distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
-    && curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | sudo apt-key add - \
-    && curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
-
-sudo apt-get update \
-    && sudo apt-get install -y nvidia-container-toolkit
-
 sudo mv ~/xiilab/config.toml /etc/containerd/
 sudo systemctl restart containerd
 
@@ -141,6 +150,15 @@ sudo systemctl restart containerd
 curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
 chmod 700 get_helm.sh
 ./get_helm.sh
+
+# install helmfile
+wget https://github.com/helmfile/helmfile/releases/download/v0.150.0/helmfile_0.150.0_linux_amd64.tar.gz
+tar -zxvf helmfile_0.150.0_linux_amd64.tar.gz
+sudo mv helmfile /usr/bin/
+rm LICENSE && rm README.md && rm helmfile_0.150.0_linux_amd64.tar.gz
+
+# install kustomize
+sudo snap install kustomize
 
 # install rook ceph
 git clone https://github.com/rook/rook.git 
@@ -167,34 +185,26 @@ helm install -n rook-ceph rook-ceph-cluster --set operatorNamespace=rook-ceph ro
 cd ~
 sleep 180
 
-# install helmfile
-wget https://github.com/helmfile/helmfile/releases/download/v0.150.0/helmfile_0.150.0_linux_amd64.tar.gz
-tar -zxvf helmfile_0.150.0_linux_amd64.tar.gz
-sudo mv helmfile /usr/bin/
-rm LICENSE && rm README.md && rm helmfile_0.150.0_linux_amd64.tar.gz
-
 # set ceph-filesystem as default storageclass
 kubectl patch storageclass ceph-block -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
-kubectl patch storageclass ceph-bucket -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
 kubectl patch storageclass ceph-filesystem -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+kubectl patch storageclass ceph-bucket -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+kubectl patch storageclass nfs-client -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
 
-# deploy uyuni infra
-git clone https://github.com/xiilab/Uyuni_Deploy.git
+# deploy uyuni infra - this process consumes 33G.
+git clone -b develop https://github.com/xiilab/Uyuni_Deploy.git
+
 cd ~/Uyuni_Deploy/environments
-rm -rf test
 cp -r default test
 sed -i "s/default.com/${IP}/g" test/values.yaml
 sed -i "s/192.168.1.210/${IP}/g" test/values.yaml
-sed -i "s/192.168.56.20-192.168.56.50/${LB_IP_POOL}/g" test/values.yaml
+sed -i "s/192.168.56.11/${IP}/g" test/values.yaml
+sed -i "s/keycloak12345/xiilabPassword3#/g" test/values.yaml
+
 cd ~/Uyuni_Deploy
-sed -i "34,37d" helmfile.yaml
-sed -i "16,18d" helmfile.yaml
-sed -i "2,12d" helmfile.yaml
+sed -i "s/default/test/g" helmfile.yaml
 helmfile --environment test -l type=base sync
 cd ~
-
-# install kustomize
-sudo snap install kustomize
 
 # download uyuni-kustomize repository and configure it
 git clone https://github.com/xiilab/Uyuni_Kustomize.git
@@ -207,11 +217,11 @@ sed -i "s/uyuni-suite.xiilab.com/${IP}/g" test/ingress-patch.yaml
 sed -i "s/192.168.1.235/${IP}/g" test/core-deployment-env.yaml
 sed -i "s/uyuni-suite.xiilab.com/${IP}/g" test/core-deployment-env.yaml
 sed -i "s/uyuni-suite.xiilab.com/${IP}/g" test/frontend-deployment-env.yaml
-sed -i "s/newName: harbor.xiilab.com\/uyuni-suite\/uyuni-suite-frontend/newName: xiilab\/uyuni-suite-frontend/g" test/kustomization.yaml
-sed -i "s/uyuni-suite.xiilab.com//g" ~/Uyuni_Kustomize/base/services/ingress.yaml
+sed -i "s/newName: harbor.xiilab.com\/uyuni-suite/newName: xiilab/g" test/kustomization.yaml
 sed -i "s/- uyuni-suite-pv.yaml/#- uyuni-suite-pv.yaml/g" test/volumes/kustomization.yaml
-sed -i "s/uyuni-suite/ceph-filesystem/g" test/volumes/uyuni-suite-pvc.yaml
 sed -i "s/100/${PV_SIZE}/g" test/volumes/uyuni-suite-pvc.yaml
+sed -i "s/uyuni-suite/ceph-filesystem/g" test/volumes/uyuni-suite-pvc.yaml
+sed -i "s/uyuni-suite.xiilab.com//g" ~/Uyuni_Kustomize/base/services/ingress.yaml
 
 # deploy uyuni suite
 cd ..
