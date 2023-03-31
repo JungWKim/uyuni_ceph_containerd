@@ -1,13 +1,15 @@
 #---------------
-#
-# run without sudo
-#
+# 1. run without sudo
+# 2. you need nfs-server for uyuni-infra
 #---------------
 
 #!/bin/bash
 
 LOCAL_FILE_COPY=no
 IP=
+NFS_IP=
+# if asustor is nfs server, nfs_path will be like, "/volume1/****"
+NFS_PATH=/kube_storage
 PV_SIZE=
 
 cd ~
@@ -197,6 +199,8 @@ cd ~/Uyuni_Deploy/environments
 cp -r default test
 sed -i "s/default.com/${IP}/g" test/values.yaml
 sed -i "s/192.168.1.210/${IP}/g" test/values.yaml
+sed -i "s/192.168.56.13/${NFS_IP}/g" test/values.yaml
+sed -i "s:/kube_storage:${NFS_PATH}:g" test/values.yaml
 sed -i "s/192.168.56.11/${IP}/g" test/values.yaml
 sed -i "s/keycloak12345/xiilabPassword3#/g" test/values.yaml
 
