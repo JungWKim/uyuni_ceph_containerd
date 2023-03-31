@@ -189,7 +189,6 @@ sleep 180
 kubectl patch storageclass ceph-block -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
 kubectl patch storageclass ceph-filesystem -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 kubectl patch storageclass ceph-bucket -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
-kubectl patch storageclass nfs-client -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
 
 # deploy uyuni infra - this process consumes 33G.
 git clone -b develop https://github.com/xiilab/Uyuni_Deploy.git
@@ -205,6 +204,8 @@ cd ~/Uyuni_Deploy
 sed -i "s/default/test/g" helmfile.yaml
 helmfile --environment test -l type=base sync
 cd ~
+
+kubectl patch storageclass nfs-client -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
 
 # download uyuni-kustomize repository and configure it
 git clone https://github.com/xiilab/Uyuni_Kustomize.git
