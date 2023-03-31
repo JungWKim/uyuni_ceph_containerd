@@ -7,9 +7,6 @@
 
 LOCAL_FILE_COPY=no
 IP=
-NFS_IP=
-# if asustor is nfs server, nfs_path will be like, "/volume1/****"
-NFS_PATH=/kube_storage
 PV_SIZE=
 
 cd ~
@@ -199,17 +196,14 @@ cd ~/Uyuni_Deploy/environments
 cp -r default test
 sed -i "s/default.com/${IP}/g" test/values.yaml
 sed -i "s/192.168.1.210/${IP}/g" test/values.yaml
-sed -i "s/192.168.56.13/${NFS_IP}/g" test/values.yaml
-sed -i "s:/kube_storage:${NFS_PATH}:g" test/values.yaml
 sed -i "s/192.168.56.11/${IP}/g" test/values.yaml
 sed -i "s/keycloak12345/xiilabPassword3#/g" test/values.yaml
 
 cd ~/Uyuni_Deploy
 sed -i "s/default/test/g" helmfile.yaml
+sed -i "15,18d" helmfile.yaml
 helmfile --environment test -l type=base sync
 cd ~
-
-kubectl patch storageclass nfs-client -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
 
 # download uyuni-kustomize repository and configure it
 git clone https://github.com/xiilab/Uyuni_Kustomize.git
