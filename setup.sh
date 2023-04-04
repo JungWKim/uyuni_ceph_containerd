@@ -1,15 +1,11 @@
 #---------------
 # 1. run without sudo
-# 2. you need nfs-server for uyuni-infra
 #---------------
 
 #!/bin/bash
 
 LOCAL_FILE_COPY=no
 IP=
-NFS_IP=
-# if asustor is nfs server, nfs_path will be like, "/volume1/****"
-NFS_PATH=/kube_storage
 PV_SIZE=
 
 cd ~
@@ -144,7 +140,7 @@ echo "source <(kubeadm completion bash)" >> ${HOME}/.bashrc
 echo "source <(kubectl completion bash)" | sudo tee -a /root/.bashrc
 echo "source <(kubeadm completion bash)" | sudo tee -a /root/.bashrc
 
-sudo cp ~/xiilab_nfs/config.toml /etc/containerd/
+sudo cp ~/xiilab/config.toml /etc/containerd/
 sudo systemctl restart containerd
 
 # install helm
@@ -192,8 +188,6 @@ kubectl patch storageclass ceph-bucket -p '{"metadata": {"annotations":{"storage
 git clone -b develop https://github.com/xiilab/Uyuni_Deploy.git
 cd ~/Uyuni_Deploy
 
-sed -i "s/192.168.56.13/${NFS_IP}/g" environments/default/values.yaml
-sed -i "s:/kube_storage:${NFS_PATH}:g" environments/default/values.yaml
 sed -i "s/192.168.56.11/${IP}/g" environments/default/values.yaml
 cp ~/.kube/config applications/uyuni-suite/uyuni-suite/config
 sed -i "s/127.0.0.1/${IP}/g" applications/uyuni-suite/uyuni-suite/config
