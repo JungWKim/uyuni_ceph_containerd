@@ -7,6 +7,9 @@
 
 LOCAL_FILE_COPY=no
 IP=
+NFS_IP=
+# if asustor is nfs server, nfs_path will be like, "/volume1/****"
+NFS_PATH=/kube_storage
 PV_SIZE=
 
 cd ~
@@ -41,12 +44,12 @@ sudo update-initramfs -u
 sudo rmmod nouveau
 
 if [ ${LOCAL_FILE_COPY} == "yes" ] ; then
-	scp root@192.168.1.59:/root/files/NVIDIA-Linux-x86_64-515.57.run .
+	scp root@192.168.1.59:/root/files/NVIDIA-Linux-x86_64-525.89.02.run .
 else
-        wget https://kr.download.nvidia.com/XFree86/Linux-x86_64/515.57/NVIDIA-Linux-x86_64-515.57.run
+        wget https://kr.download.nvidia.com/XFree86/Linux-x86_64/525.89.02/NVIDIA-Linux-x86_64-525.89.02.run
 fi
 
-sudo sh ~/NVIDIA-Linux-x86_64-515.57.run
+sudo sh ~/NVIDIA-Linux-x86_64-525.89.02.run
 
 nvidia-smi
 nvidia-smi -L
@@ -65,9 +68,6 @@ distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
 
 sudo apt-get update \
     && sudo apt-get install -y nvidia-container-toolkit
-    
-# only up to this line for additional worker nodes
-#----------------------------------------------------------------
 
 # network configuration
 sudo modprobe overlay \
@@ -85,6 +85,9 @@ net.bridge.bridge-nf-call-ip6tables = 1
 EOF
 
 sudo sysctl --system
+
+# only up to this line for additional worker nodes
+#----------------------------------------------------------------
 
 # install containerd
 sudo apt-get update
@@ -105,8 +108,7 @@ echo \
 sudo apt-get update \
     && sudo apt-get install -y containerd.io
 
-sudo mkdir -p /etc/containerd \
-    && sudo containerd config default | sudo tee /etc/containerd/config.toml
+sudo containerd config default | sudo tee /etc/containerd/config.toml
 
 # ssh configuration
 ssh-keygen -t rsa
@@ -142,7 +144,7 @@ echo "source <(kubeadm completion bash)" >> ${HOME}/.bashrc
 echo "source <(kubectl completion bash)" | sudo tee -a /root/.bashrc
 echo "source <(kubeadm completion bash)" | sudo tee -a /root/.bashrc
 
-sudo mv ~/xiilab/config.toml /etc/containerd/
+sudo cp ~/xiilab_nfs/config.toml /etc/containerd/
 sudo systemctl restart containerd
 
 # install helm
@@ -155,9 +157,6 @@ wget https://github.com/helmfile/helmfile/releases/download/v0.150.0/helmfile_0.
 tar -zxvf helmfile_0.150.0_linux_amd64.tar.gz
 sudo mv helmfile /usr/bin/
 rm LICENSE && rm README.md && rm helmfile_0.150.0_linux_amd64.tar.gz
-
-# install kustomize
-sudo snap install kustomize
 
 # install rook ceph
 git clone https://github.com/rook/rook.git 
@@ -191,38 +190,17 @@ kubectl patch storageclass ceph-bucket -p '{"metadata": {"annotations":{"storage
 
 # deploy uyuni infra - this process consumes 33G.
 git clone -b develop https://github.com/xiilab/Uyuni_Deploy.git
-
-cd ~/Uyuni_Deploy/environments
-cp -r default test
-sed -i "s/default.com/${IP}/g" test/values.yaml
-sed -i "s/192.168.1.210/${IP}/g" test/values.yaml
-sed -i "s/192.168.56.11/${IP}/g" test/values.yaml
-sed -i "s/keycloak12345/xiilabPassword3#/g" test/values.yaml
-
 cd ~/Uyuni_Deploy
-sed -i "s/default/test/g" helmfile.yaml
+
+sed -i "s/192.168.56.13/${NFS_IP}/g" environments/default/values.yaml
+sed -i "s:/kube_storage:${NFS_PATH}:g" environments/default/values.yaml
+sed -i "s/192.168.56.11/${IP}/g" environments/default/values.yaml
+cp ~/.kube/config applications/uyuni-suite/uyuni-suite/config
+sed -i "s/127.0.0.1/${IP}/g" applications/uyuni-suite/uyuni-suite/config
+sed -i "s/5/${PV_SIZE}/g" applications/uyuni-suite/values.yaml.gotmpl
 sed -i "15,18d" helmfile.yaml
-helmfile --environment test -l type=base sync
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helmfile --environment default -l type=base sync
+helmfile --environment default -l type=app sync
 cd ~
 
-# download uyuni-kustomize repository and configure it
-git clone https://github.com/xiilab/Uyuni_Kustomize.git
-cd ~/Uyuni_Kustomize/overlays
-cp -r stage test
-cp ~/.kube/config test/config
-sed -i "s/127.0.0.1/${IP}/g" test/config
-
-sed -i "s/uyuni-suite.xiilab.com/${IP}/g" test/ingress-patch.yaml
-sed -i "s/192.168.1.235/${IP}/g" test/core-deployment-env.yaml
-sed -i "s/uyuni-suite.xiilab.com/${IP}/g" test/core-deployment-env.yaml
-sed -i "s/uyuni-suite.xiilab.com/${IP}/g" test/frontend-deployment-env.yaml
-sed -i "s/newName: harbor.xiilab.com\/uyuni-suite/newName: xiilab/g" test/kustomization.yaml
-sed -i "s/- uyuni-suite-pv.yaml/#- uyuni-suite-pv.yaml/g" test/volumes/kustomization.yaml
-sed -i "s/100/${PV_SIZE}/g" test/volumes/uyuni-suite-pvc.yaml
-sed -i "s/uyuni-suite/ceph-filesystem/g" test/volumes/uyuni-suite-pvc.yaml
-sed -i "s/uyuni-suite.xiilab.com//g" ~/Uyuni_Kustomize/base/services/ingress.yaml
-
-# deploy uyuni suite
-cd ..
-kubectl create ns uyuni-suite
-kustomize build overlays/test | kubectl apply -f -
