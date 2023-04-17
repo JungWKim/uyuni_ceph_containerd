@@ -51,6 +51,13 @@ cp -rfp inventory/sample inventory/mycluster
 declare -a IPS=(${IP})
 CONFIG_FILE=inventory/mycluster/hosts.yaml python3 contrib/inventory_builder/inventory.py ${IPS[@]}
 
+# enable kubectl & kubeadm auto-completion
+echo "source <(kubectl completion bash)" >> ${HOME}/.bashrc
+echo "source <(kubeadm completion bash)" >> ${HOME}/.bashrc
+
+echo "source <(kubectl completion bash)" | sudo tee -a /root/.bashrc
+echo "source <(kubeadm completion bash)" | sudo tee -a /root/.bashrc
+
 # automatically disable swap partition
 ansible-playbook -i inventory/mycluster/hosts.yaml  --become --become-user=root cluster.yml -K
 cd ~
@@ -59,13 +66,6 @@ cd ~
 mkdir -p ${HOME}/.kube
 sudo cp -i /etc/kubernetes/admin.conf ${HOME}/.kube/config
 sudo chown ${USER}:${USER} ${HOME}/.kube/config
-
-# enable kubectl & kubeadm auto-completion
-echo "source <(kubectl completion bash)" >> ${HOME}/.bashrc
-echo "source <(kubeadm completion bash)" >> ${HOME}/.bashrc
-
-echo "source <(kubectl completion bash)" | sudo tee -a /root/.bashrc
-echo "source <(kubeadm completion bash)" | sudo tee -a /root/.bashrc
 
 sudo cp ~/uyuni_ceph_containerd/config.toml /etc/containerd/
 sudo systemctl restart containerd
