@@ -77,8 +77,8 @@ sudo cp -i /etc/kubernetes/admin.conf ${HOME}/.kube/config
 sudo chown ${USER}:${USER} ${HOME}/.kube/config
 
 # create sa and clusterrolebinding of dashboard to get cluster-admin token
-kubectl apply -f ~/kubespray_docker_ubuntu/sa.yaml
-kubectl apply -f ~/kubespray_docker_ubuntu/clusterrolebinding.yaml
+kubectl apply -f ~/uyuni_ceph_containerd/sa.yaml
+kubectl apply -f ~/uyuni_ceph_containerd/clusterrolebinding.yaml
 
 sudo cp ~/uyuni_ceph_containerd/config.toml /etc/containerd/
 sudo systemctl restart containerd
