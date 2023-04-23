@@ -1,3 +1,10 @@
+## Summary
+### k8s : 1.24.6
+### cni : calico
+### cri : containerd 1.6.x
+### os : ubuntu 22.04
+### provisioner : ceph-filesystem
+---------------------
 ## before you run this script
 ### - prepare nfs server which provides /data directory
 ### - do not run this script as root or sudo
