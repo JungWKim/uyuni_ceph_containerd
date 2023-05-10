@@ -7,6 +7,7 @@
 ### kubespray : release-2.20
 ---------------------
 ## before you run this script
+### - install prerequisite software using setup_server repository
 ### - prepare nfs server which provides /data directory
 ### - do not run this script as root or sudo
 ### - you can create only one administrator account
