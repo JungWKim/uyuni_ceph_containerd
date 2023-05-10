@@ -10,6 +10,7 @@
 ### - prepare nfs server which provides /data directory
 ### - do not run this script as root or sudo
 ### - you can create only one administrator account
+---------------------
 ## This repository do below things
 ### 1. set up k8s control plane
 ### 2. install rook ceph
@@ -26,6 +27,7 @@
 ### 5. In every node, copy config.toml to /etc/containerd/config & restart containerd
 ### 6. In uyuni dashboard, add worker node.
 ### 7. After you join additional masters, copy /etc/kubernetes/admin.conf to administrator's $HOME/.kube. Then configure HAproxy + keepalived
+## 추가적인 내용은 kubespray_ubuntu 레포지토리 참고할 것
 -----------------------
 ## how to remove uyuni-infra and uyuni-suite completely
 ### 1. kustomize build overlays/test | kubectl delete -f -
